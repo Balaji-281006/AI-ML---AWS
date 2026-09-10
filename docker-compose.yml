@@ -1,0 +1,42 @@
+Aditi Sharmaversion: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: skyguard-db
+    environment:
+      POSTGRES_DB: skyguard
+      POSTGRES_USER: skyguard
+      POSTGRES_PASSWORD: skyguard-demo-password
+    ports:
+      - '5432:5432'
+    volumes:
+      - skyguard-postgres:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: skyguard-backend
+    ports:
+      - '8000:8000'
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql+psycopg://skyguard:skyguard-demo-password@db:5432/skyguard
+      - SKYGUARD_JWT_SECRET=${SKYGUARD_JWT_SECRET:-change-this-in-production}
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: skyguard-frontend
+    ports:
+      - '5173:5173'
+    environment:
+      - VITE_API_URL=/api
+      - VITE_WS_URL=
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+    depends_on:
+      - backend
+
+volumes:
+  skyguard-postgres:
